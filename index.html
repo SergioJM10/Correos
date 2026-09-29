@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pendientes Correos</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:#eef0fb; --surface-1:#ffffff;
+    --text-primary:#20233a; --text-secondary:#5b5f78; --text-muted:#8d90a8;
+    --border: rgba(32,35,58,0.09); --gridline:#e9eaf5;
+    --shadow: 0 1px 2px rgba(32,35,58,.04), 0 4px 14px rgba(32,35,58,.05);
+    --accent:#5b4fd6; --accent-bg:#ece9fc;
+    --ask-blue-bg:#eaf0fd; --ask-blue-border:#cbdaf7; --ask-blue-text:#3457c9;
+    --ask-green-bg:#eaf8ee; --ask-green-border:#c9ecd2; --ask-green-text:#1f8f4c;
+    --urgent-bg:#fdeedb; --urgent-text:#b9721c;
+    --good:#1f6b41; --good-bg:#e6f3ea;
+    --warning:#a1740f; --warning-bg:#fbf1dc;
+    --critical:#c73b5b; --critical-bg:#fce9ee;
+    --neutral-bg:#eef0f4; --neutral-ink:#5b5f78;
+    --pdf:#d0507a; --xls:#1f9d5c; --generic:#8d90a8;
+    --av1-bg:#f6ddc8; --av1-ink:#8a5a2a;
+    --av2-bg:#dce4fb; --av2-ink:#4054a8;
+    --av3-bg:#dcf1e2; --av3-ink:#237a49;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:#15151f; --surface-1:#1e1f2c;
+      --text-primary:#f1f1f7; --text-secondary:#b7b9cc; --text-muted:#82849c;
+      --border: rgba(255,255,255,0.08); --gridline:#2c2d3f;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+      --accent:#9089ec; --accent-bg:#292a45;
+      --ask-blue-bg:#1f2540; --ask-blue-border:#33407a; --ask-blue-text:#9ab0f5;
+      --ask-green-bg:#173323; --ask-green-border:#215939; --ask-green-text:#6fd897;
+      --urgent-bg:#3a2c15; --urgent-text:#e3a75c;
+      --good:#4fae7f; --good-bg:#17281f;
+      --warning:#c99b3f; --warning-bg:#2e2510;
+      --critical:#e37d9c; --critical-bg:#3a1c26;
+      --neutral-bg:#26273a; --neutral-ink:#b7b9cc;
+      --pdf:#e37d9c; --xls:#4fc482; --generic:#82849c;
+      --av1-bg:#3a2c1c; --av1-ink:#e3b57c;
+      --av2-bg:#212a4a; --av2-ink:#9ab0f5;
+      --av3-bg:#173323; --av3-ink:#6fd897;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:#15151f; --surface-1:#1e1f2c;
+    --text-primary:#f1f1f7; --text-secondary:#b7b9cc; --text-muted:#82849c;
+    --border: rgba(255,255,255,0.08); --gridline:#2c2d3f;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+    --accent:#9089ec; --accent-bg:#292a45;
+    --ask-blue-bg:#1f2540; --ask-blue-border:#33407a; --ask-blue-text:#9ab0f5;
+    --ask-green-bg:#173323; --ask-green-border:#215939; --ask-green-text:#6fd897;
+    --urgent-bg:#3a2c15; --urgent-text:#e3a75c;
+    --good:#4fae7f; --good-bg:#17281f;
+    --warning:#c99b3f; --warning-bg:#2e2510;
+    --critical:#e37d9c; --critical-bg:#3a1c26;
+    --neutral-bg:#26273a; --neutral-ink:#b7b9cc;
+    --pdf:#e37d9c; --xls:#4fc482; --generic:#82849c;
+    --av1-bg:#3a2c1c; --av1-ink:#e3b57c;
+    --av2-bg:#212a4a; --av2-ink:#9ab0f5;
+    --av3-bg:#173323; --av3-ink:#6fd897;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; background: var(--page); color: var(--text-primary);
+    font-family: Georgia, "Times New Roman", "Iowan Old Style", serif;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 40px 88px; }
+
+  .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  .greet h1 { font-size:22px; margin:0 0 8px; font-weight:700; }
+  .greet .count { color: var(--accent); }
+  .greet p { margin:0; font-size:13.5px; color: var(--text-secondary); font-style:italic; }
+
+  .topbar-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .sync-pill { display:flex; align-items:center; gap:7px; font-size:12.5px; color: var(--text-secondary); white-space:nowrap; background: var(--surface-1); border:1px solid var(--border); border-radius:10px; padding:9px 13px; box-shadow: var(--shadow); }
+  .sync-pill .dot { width:7px; height:7px; border-radius:50%; background: var(--good); flex-shrink:0; }
+  .sync-pill.err .dot { background: var(--critical); }
+  .sync-btn { font-family:inherit; background: var(--accent); color:#fff; border:none; border-radius:10px; padding:10px 16px; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow: var(--shadow); }
+  .sync-btn:disabled { opacity:.6; cursor:default; }
+  .theme-btn { border:1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); border-radius:9px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow: var(--shadow); flex-shrink:0; }
+
+  .note { background: var(--surface-1); border:1px solid var(--border); border-radius:14px; padding:14px 18px; font-size:12.5px; margin-bottom:20px; line-height:1.65; color: var(--text-secondary); box-shadow: var(--shadow); }
+
+  .error-box { background: var(--critical-bg); color: var(--critical); border-radius:12px; padding:13px 16px; font-size:13px; margin-bottom:20px; line-height:1.55; }
+
+  .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 30px; flex-wrap:wrap; }
+  .search-wrap { flex:1; min-width:200px; max-width:320px; }
+  .search-wrap input { width:100%; font-family:inherit; font-size:12.5px; padding:10px 13px; border-radius:11px; border:1px solid var(--border); background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); }
+  .filters { display:flex; gap:6px; background: var(--surface-1); border:1px solid var(--border); border-radius:12px; padding:5px; box-shadow: var(--shadow); }
+  .filter-btn { border:none; background:none; font-family: inherit; font-size:12.5px; font-weight:700; padding:9px 16px; border-radius:9px; color: var(--text-secondary); cursor:pointer; white-space:nowrap; }
+  .filter-btn.active { background: var(--accent); color:#fff; }
+  .sort-select { font-family: inherit; font-size:12.5px; font-weight:600; padding:10px 13px; border-radius:11px; border:1px solid var(--border); background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); }
+
+  .empty-state { text-align:center; padding: 60px 20px; color: var(--text-secondary); background: var(--surface-1); border:1px solid var(--border); border-radius:20px; box-shadow: var(--shadow); }
+  .empty-state .big { font-size:34px; margin-bottom:10px; }
+
+  .company { background: var(--surface-1); border:1px solid var(--border); border-radius:20px; margin-bottom:26px; overflow:hidden; box-shadow: var(--shadow); }
+  .company-header { display:flex; align-items:center; gap:16px; padding:24px 26px; }
+  .co-icon { width:46px; height:46px; border-radius:13px; background: var(--accent-bg); color: var(--accent); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; flex-shrink:0; }
+  .co-main { flex:1; min-width:0; }
+  .co-name-row { display:flex; align-items:center; gap:11px; flex-wrap:wrap; }
+  .co-name { font-weight:700; font-size:16.5px; }
+  .co-badge { font-size:11px; font-weight:700; padding:4px 13px; border-radius:999px; background: var(--accent-bg); color: var(--accent); white-space:nowrap; }
+  .co-sub { font-size:12.5px; color: var(--text-muted); margin-top:5px; font-style:italic; }
+  .co-toggle { font-size:12.5px; font-weight:700; color: var(--text-secondary); background: var(--page); border:1px solid var(--border); border-radius:10px; padding:10px 16px; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:7px; }
+  .co-toggle svg { transition: transform .15s; }
+  .company.open .co-toggle svg { transform: rotate(180deg); }
+
+  .co-body { display:none; padding: 6px 26px 28px; }
+  .company.open .co-body { display:block; }
+
+  .task { border: 1px solid var(--gridline); border-radius:18px; padding:26px; margin-top:20px; background: var(--surface-1); }
+  .task-head { display:flex; align-items:flex-start; gap:14px; }
+  .avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; flex-shrink:0; }
+  .task-who { flex:1; min-width:0; display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; padding-top:6px; }
+  .task-who .name { font-weight:700; font-size:14.5px; }
+  .task-who .role { font-size:12.5px; color: var(--text-muted); }
+  .task-when { text-align:right; white-space:nowrap; }
+  .urg-tag { font-size:11px; font-weight:700; padding:4px 11px; border-radius:999px; display:inline-flex; align-items:center; gap:4px; margin-bottom:6px; background: var(--urgent-bg); color: var(--urgent-text); }
+  .task-time { display:block; font-size:11.5px; color: var(--text-muted); }
+
+  .task-subject { font-weight:700; font-size:15.5px; margin: 22px 0 18px; line-height:1.45; }
+
+  .ask-box { border-radius:13px; padding:18px 20px; margin-bottom:22px; border:1px solid; max-width: 640px; }
+  .ask-box.blue { background: var(--ask-blue-bg); border-color: var(--ask-blue-border); }
+  .ask-box.green { background: var(--ask-green-bg); border-color: var(--ask-green-border); }
+  .ask-box .label { display:flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; margin-bottom:9px; }
+  .ask-box.blue .label { color: var(--ask-blue-text); }
+  .ask-box.green .label { color: var(--ask-green-text); }
+  .ask-box p { margin:0; font-size:13.5px; line-height:1.7; color: var(--text-primary); }
+
+  .files-label { font-size:11.5px; font-weight:700; color: var(--text-secondary); margin-bottom:11px; }
+  .files { display:flex; flex-wrap:wrap; gap:11px; margin-bottom:24px; }
+  .file-card { display:flex; align-items:center; gap:10px; border:1px solid var(--border); border-radius:11px; padding:10px 14px; background: var(--surface-1); text-decoration:none; box-shadow: var(--shadow); }
+  .file-meta .fname { font-size:12.5px; font-weight:600; color: var(--text-primary); max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .file-meta .fsize { font-size:11px; color: var(--text-muted); font-style:italic; }
+
+  .action-row { display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; }
+  .reply-btn { flex:1; min-width:150px; text-align:center; font-family:inherit; font-size:13px; font-weight:700; color: var(--text-secondary); background: var(--surface-1); border:1px solid var(--border); border-radius:12px; padding:13px; cursor:pointer; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .reply-btn.disabled { color: var(--text-muted); cursor:default; opacity:.7; }
+  .status-group { flex:1.6; min-width:200px; display:flex; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .status-seg { flex:1; text-align:center; font-family:inherit; font-size:12px; font-weight:700; padding:13px 6px; cursor:pointer; border:none; background: var(--surface-1); color: var(--text-muted); border-left:1px solid var(--border); }
+  .status-seg:first-child { border-left:none; }
+  .status-seg.active-pendiente { background: var(--neutral-bg); color: var(--neutral-ink); }
+  .status-seg.active-proceso { background: var(--warning-bg); color: var(--warning); }
+  .status-seg.active-hecho { background: var(--good); color:#fff; }
+  .status-seg:disabled { opacity:.6; cursor:default; }
+
+  .safe-note { font-size:11px; color: var(--text-muted); margin-top:16px; text-align:center; font-style:italic; }
+
+  .noaction-toggle { display:flex; align-items:center; gap:8px; padding:20px 4px 6px; cursor:pointer; font-size:12.5px; color: var(--text-muted); font-weight:700; }
+  .noaction-list { display:none; padding-top:8px; }
+  .noaction-list.open { display:block; }
+  .noaction-row { display:flex; gap:12px; padding:11px 0; border-top:1px solid var(--gridline); font-size:12px; color: var(--text-muted); align-items:baseline; }
+  .noaction-row:first-child { border-top:none; }
+  .noaction-row b { color: var(--text-secondary); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="greet">
+      <h1>Hola Iliana, <span class="count" id="greetCount">cargando tus pendientes...</span></h1>
+      <p id="greetSub">Un momento, estamos organizando todo por empresa.</p>
+    </div>
+    <div class="topbar-actions">
+      <div class="sync-pill" id="syncPill"><span class="dot"></span><span id="syncText">Cargando...</span></div>
+      <button class="sync-btn" id="syncBtn" onclick="loadData()">⟳ Actualizar</button>
+      <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+    </div>
+  </div>
+
+  <div class="note">🔒 Este panel es solo un resumen de tu correo — nunca marcamos correos como leídos ni cambiamos nada en tu bandeja real. Solo tú decides, aquí, cuándo algo está "Hecho".</div>
+
+  <div id="errorBox"></div>
+
+  <div class="toolbar">
+    <div class="search-wrap"><input type="text" id="searchInput" placeholder="Buscar empresa, persona o correo..." oninput="applyFilters()"></div>
+    <div class="filters">
+      <button class="filter-btn active" id="fAll" onclick="setFilter('all')">Todas las empresas (<span id="fAllCount">0</span>)</button>
+      <button class="filter-btn" id="fUrgent" onclick="setFilter('urgent')">Solo urgentes (<span id="fUrgentCount">0</span>)</button>
+    </div>
+    <select class="sort-select" id="sortSelect" onchange="render()">
+      <option value="new">Más nuevos primero</option>
+      <option value="old">Más viejos primero</option>
+    </select>
+  </div>
+
+  <div id="companies"></div>
+</div>
+
+<script>
+/* ====== CONFIGURACIÓN — datos de tu backend (Supabase Edge Function) ====== */
+const BACKEND_URL = 'https://ddorhtkezlliavzfvolt.supabase.co/functions/v1/pendientes';
+const SHARED_KEY = '19dcef06-f30b-4fb5-9e93-5de7501a5edd'; // debe ser igual al secreto SHARED_KEY de la función
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkb3JodGtlemxsaWF2emZ2b2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1OTc5NTEsImV4cCI6MjEwNjE3Mzk1MX0.ReN2FisXLMZrFl02UjKtL4okVDPrP5qwiKZolLMoyYM'; // llave pública del proyecto, la exige Supabase en cada llamada
+/* ================================================================================ */
+
+const avatarStyles = ['av1', 'av2', 'av3'];
+
+let allItems = [];
+let currentFilter = 'all'; // 'all' | 'urgent'
+
+function initials(name) {
+  if (!name) return '?';
+  return name.split(' ').filter(w => w.length > 1).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function toBool(v) {
+  return v === true || v === 'TRUE' || v === 'true' || v === 1;
+}
+
+function fileGlyph(type) {
+  const t = (type || '').toLowerCase();
+  if (t.includes('pdf')) return `<span style="color:var(--pdf);font-size:16px">▤</span>`;
+  if (t.includes('xls') || t.includes('sheet')) return `<span style="color:var(--xls);font-size:16px">▦</span>`;
+  return `<span style="color:var(--generic);font-size:16px">▢</span>`;
+}
+
+// Fecha ordenable: usamos last_updated (timestamptz real en Supabase) porque
+// date_received hoy es un texto libre ("28 sep, 8:28 am") y no se puede ordenar
+// de forma confiable. Si más adelante se agrega una columna date_ts con la
+// fecha real de recepción del correo, cambiar aquí por t.date_ts.
+function sortValue(t) {
+  const d = t.last_updated ? new Date(t.last_updated).getTime() : 0;
+  return isNaN(d) ? 0 : d;
+}
+
+function setSync(text, isErr) {
+  document.getElementById('syncText').textContent = text;
+  document.getElementById('syncPill').classList.toggle('err', !!isErr);
+}
+
+function showError(msg) {
+  document.getElementById('errorBox').innerHTML = `<div class="error-box">${msg}</div>`;
+}
+function clearError() {
+  document.getElementById('errorBox').innerHTML = '';
+}
+
+async function loadData() {
+  const btn = document.getElementById('syncBtn');
+  btn.disabled = true;
+  setSync('Actualizando...');
+  clearError();
+  try {
+    const res = await fetch(`${BACKEND_URL}?key=${encodeURIComponent(SHARED_KEY)}`, {
+      headers: { 'Authorization': `Bearer ${ANON_KEY}`, 'apikey': ANON_KEY }
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Error desconocido del backend');
+    allItems = data.items || [];
+    setSync('Bandeja al día · ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
+    render();
+  } catch (err) {
+    setSync('Sin conexión', true);
+    showError('No pude cargar los pendientes (' + err.message + '). Revisa tu conexión o inténtalo de nuevo en un momento.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function setStatus(id, status, el) {
+  const group = el.closest('.status-group');
+  group.querySelectorAll('.status-seg').forEach(b => b.disabled = true);
+  try {
+    const res = await fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ANON_KEY}`, 'apikey': ANON_KEY },
+      body: JSON.stringify({ key: SHARED_KEY, action: 'update_status', id: id, status: status })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'no se pudo guardar');
+    const item = allItems.find(i => i.id === id);
+    if (item) item.status = status;
+    render();
+  } catch (err) {
+    showError('No se pudo guardar el nuevo estatus (' + err.message + '). Vuelve a intentar.');
+    group.querySelectorAll('.status-seg').forEach(b => b.disabled = false);
+  }
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.getElementById('fAll').classList.toggle('active', f === 'all');
+  document.getElementById('fUrgent').classList.toggle('active', f === 'urgent');
+  render();
+}
+
+function applyFilters() { render(); }
+
+function groupByCompany(items) {
+  const map = {};
+  items.forEach(it => {
+    const key = it.company || 'Sin empresa';
+    if (!map[key]) map[key] = [];
+    map[key].push(it);
+  });
+  return Object.keys(map).sort().map(name => ({ company: name, tasks: map[name] }));
+}
+
+function render() {
+  const order = document.getElementById('sortSelect').value;
+  const searchTerm = (document.getElementById('searchInput').value || '').toLowerCase();
+
+  let items = allItems.slice();
+  if (searchTerm) {
+    items = items.filter(i =>
+      (i.company || '').toLowerCase().includes(searchTerm) ||
+      (i.sender_name || '').toLowerCase().includes(searchTerm) ||
+      (i.sender_email || '').toLowerCase().includes(searchTerm) ||
+      (i.subject || '').toLowerCase().includes(searchTerm)
+    );
+  }
+  if (currentFilter === 'urgent') items = items.filter(i => toBool(i.urgent) && i.status !== 'hecho');
+
+  // resumen
+  const total = allItems.length;
+  const hechos = allItems.filter(i => i.status === 'hecho').length;
+  const pendientesActivos = total - hechos;
+  const urgentesActivos = allItems.filter(i => toBool(i.urgent) && i.status !== 'hecho').length;
+
+  document.getElementById('greetCount').textContent = total
+    ? `tienes ${pendientesActivos} pendiente${pendientesActivos === 1 ? '' : 's'} hoy`
+    : 'no hay pendientes registrados todavía';
+  document.getElementById('greetSub').textContent = total
+    ? `Organizados paso a paso en ${groupByCompany(allItems).length} empresa(s). Revisa una a la vez, a tu propio ritmo.`
+    : 'En cuanto se sincronice tu correo, aquí aparecerán agrupados por empresa.';
+  document.getElementById('fAllCount').textContent = total;
+  document.getElementById('fUrgentCount').textContent = urgentesActivos;
+
+  const container = document.getElementById('companies');
+  container.innerHTML = '';
+
+  if (!items.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="big">📭</div>
+        <div>${total ? 'Nada coincide con tu búsqueda o filtro.' : 'Todavía no hay correos sincronizados. En cuanto corra el primer escaneo, aparecerán aquí agrupados por empresa.'}</div>
+      </div>`;
+    return;
+  }
+
+  const groups = groupByCompany(items);
+  let avIdx = 0;
+
+  groups.forEach((group, gi) => {
+    // Separamos lo accionable de lo que no necesita acción (si el dato viene marcado así).
+    const actionable = group.tasks.filter(t => t.actionable !== false);
+    const noAction = group.tasks.filter(t => t.actionable === false);
+    if (!actionable.length && !noAction.length) return;
+
+    const tasksSorted = actionable.slice().sort((a, b) => order === 'new' ? sortValue(b) - sortValue(a) : sortValue(a) - sortValue(b));
+    const mostRecent = group.tasks.slice().sort((a, b) => sortValue(b) - sortValue(a))[0];
+    const pendCount = actionable.filter(t => t.status !== 'hecho').length;
+
+    const div = document.createElement('div');
+    div.className = 'company' + (gi === 0 ? ' open' : '');
+    div.innerHTML = `
+      <div class="company-header">
+        <div class="co-icon">${initials(group.company)}</div>
+        <div class="co-main">
+          <div class="co-name-row"><span class="co-name">${group.company}</span><span class="co-badge">${pendCount} correo(s) pendiente(s)</span></div>
+          <div class="co-sub">${mostRecent && mostRecent.date_received ? 'Último mensaje recibido ' + mostRecent.date_received : group.tasks.length + ' correo(s) en total'}</div>
+        </div>
+        <button class="co-toggle" onclick="this.closest('.company').classList.toggle('open')">Ocultar pendientes <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+      </div>
+      <div class="co-body">
+        ${tasksSorted.map(t => {
+          const av = avatarStyles[avIdx++ % avatarStyles.length];
+          const urgent = toBool(t.urgent);
+          return `
+          <div class="task">
+            <div class="task-head">
+              <div class="avatar" style="background:var(--${av}-bg);color:var(--${av}-ink)">${initials(t.sender_name)}</div>
+              <div class="task-who"><span class="name">${t.sender_name || 'Remitente desconocido'}</span><span class="role">${t.sender_role || t.sender_email ? '· ' + (t.sender_role || t.sender_email) : ''}</span></div>
+              <div class="task-when">
+                ${urgent ? '<span class="urg-tag">⚡ Urgente para hoy</span>' : ''}
+                <span class="task-time">${t.date_received || ''}${t.due_date ? ' · vence ' + t.due_date : ''}</span>
+              </div>
+            </div>
+            <div class="task-subject">${t.subject || '(sin asunto)'}</div>
+            <div class="ask-box ${urgent ? 'blue' : 'green'}"><div class="label">📌 LO QUE NECESITAS HACER:</div><p>${t.summary || 'Sin resumen disponible.'}</p></div>
+            ${(t.attachments && t.attachments.length) ? `
+              <div class="files-label">Archivos para revisar:</div>
+              <div class="files">${t.attachments.map(f => `<a class="file-card" href="${f.url || '#'}" target="_blank">${fileGlyph(f.type)}<div class="file-meta"><div class="fname">${f.name || 'archivo'}</div><div class="fsize">${f.size || ''}</div></div></a>`).join('')}</div>
+            ` : ''}
+            <div class="action-row">
+              ${t.mail_url
+                ? `<a class="reply-btn" href="${t.mail_url}" target="_blank">← Responder correo</a>`
+                : `<div class="reply-btn disabled">← Responder correo (no disponible)</div>`}
+              <div class="status-group">
+                <button class="status-seg ${t.status === 'pendiente' || !t.status ? 'active-pendiente' : ''}" onclick="setStatus('${t.id}', 'pendiente', this)">Pendiente</button>
+                <button class="status-seg ${t.status === 'proceso' ? 'active-proceso' : ''}" onclick="setStatus('${t.id}', 'proceso', this)">Proceso</button>
+                <button class="status-seg ${t.status === 'hecho' ? 'active-hecho' : ''}" onclick="setStatus('${t.id}', 'hecho', this)">✓ Hecho</button>
+              </div>
+            </div>
+            <div class="safe-note">Al marcar "Hecho", el pendiente se archiva aquí — el correo sigue intacto en tu bandeja.</div>
+          </div>
+        `; }).join('')}
+        ${noAction.length ? `
+          <div class="noaction-toggle" onclick="this.nextElementSibling.classList.toggle('open')">⌄ Sin acción necesaria (${noAction.length}) — publicidad y avisos</div>
+          <div class="noaction-list">
+            ${noAction.map(n => `<div class="noaction-row"><b>${n.sender_name || 'Remitente'}</b><span>${n.subject || ''}</span><span style="margin-left:auto">${n.date_received || ''}</span></div>`).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const current = root.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+loadData();
+</script>
+</body>
+</html>
